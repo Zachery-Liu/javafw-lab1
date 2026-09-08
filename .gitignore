@@ -1,0 +1,51 @@
+# Maven build output
+target/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+out/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# Visual Studio Code
+.vscode/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Local configuration and logs
+*.log
+*.local
+.env
+
+# Local documents and reports (keep on disk; never commit)
+docs/
+doc/
+documentation/
+*.md
+*.markdown
+*.rst
+*.txt
+*.doc
+*.docx
+*.docm
+*.dot
+*.dotx
+*.pdf
+*.ppt
+*.pptx
+*.pptm
+*.xls
+*.xlsx
+*.xlsm
+*.odt
+*.ods
+*.odp
+*.rtf
+*.html
+*.htm
