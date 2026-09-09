@@ -23,6 +23,9 @@ Thumbs.db
 *.local
 .env
 
+# Local database credentials
+src/main/resources/db.properties
+
 # Local documents and reports (keep on disk; never commit)
 docs/
 doc/
