@@ -88,6 +88,65 @@ public class ProductMapperTest {
     }
 
     @Test
+    public void dynamicUpdateChangesOnlyProvidedFields() {
+        try (SqlSession session = sqlSessionFactory.openSession()) {
+            ProductMapper mapper = session.getMapper(ProductMapper.class);
+            Product changes = new Product();
+            changes.setProductId(1L);
+            changes.setProductName("动态更新键盘");
+            changes.setUnitPrice(new BigDecimal("249.00"));
+
+            Assert.assertEquals(1, mapper.updateDynamic(changes));
+            session.commit();
+
+            Product updated = mapper.selectById(1L);
+            Assert.assertEquals("动态更新键盘", updated.getProductName());
+            Assert.assertEquals(0, new BigDecimal("249.00").compareTo(updated.getUnitPrice()));
+            Assert.assertEquals("TEST-001", updated.getProductCode());
+            Assert.assertEquals("数码配件", updated.getCategory());
+            Assert.assertEquals("TestBrand", updated.getBrand());
+            Assert.assertEquals(Integer.valueOf(20), updated.getStockQuantity());
+        }
+    }
+
+    @Test
+    public void dynamicUpdateAcceptsZeroValues() {
+        try (SqlSession session = sqlSessionFactory.openSession()) {
+            ProductMapper mapper = session.getMapper(ProductMapper.class);
+            Product changes = new Product();
+            changes.setProductId(1L);
+            changes.setStockQuantity(0);
+            changes.setStatus(0);
+
+            Assert.assertEquals(1, mapper.updateDynamic(changes));
+            session.commit();
+
+            Product updated = mapper.selectById(1L);
+            Assert.assertEquals(Integer.valueOf(0), updated.getStockQuantity());
+            Assert.assertEquals(Integer.valueOf(0), updated.getStatus());
+            Assert.assertEquals("测试键盘", updated.getProductName());
+        }
+    }
+
+    @Test
+    public void dynamicUpdateRejectsNoFieldsAndMissingId() {
+        try (SqlSession session = sqlSessionFactory.openSession()) {
+            ProductMapper mapper = session.getMapper(ProductMapper.class);
+            Product noFields = new Product();
+            noFields.setProductId(1L);
+            Assert.assertThrows(IllegalArgumentException.class,
+                    () -> mapper.updateDynamic(noFields));
+
+            Product noId = new Product();
+            noId.setProductName("不能更新");
+            Assert.assertThrows(IllegalArgumentException.class,
+                    () -> mapper.updateDynamic(noId));
+
+            Assert.assertEquals("测试键盘", mapper.selectById(1L).getProductName());
+        }
+    }
+
+    @Test
     public void deleteByIdRemovesProduct() {
         try (SqlSession session = sqlSessionFactory.openSession()) {
             ProductMapper mapper = session.getMapper(ProductMapper.class);

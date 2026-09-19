@@ -33,6 +33,33 @@
         ORDER BY product_id
     </select>
 
+    <select id="selectByCondition" parameterType="cn.edu.tjut.huaxin.product.query.ProductQuery"
+            resultMap="productResultMap">
+        SELECT <include refid="allColumns"/>
+        FROM product
+        <where>
+            <if test="productName != null and productName != ''">
+                AND product_name LIKE CONCAT('%', #{productName}, '%')
+            </if>
+            <if test="category != null and category != ''">
+                AND category = #{category}
+            </if>
+            <if test="brand != null and brand != ''">
+                AND brand = #{brand}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+            <if test="minPrice != null">
+                AND unit_price &gt;= #{minPrice}
+            </if>
+            <if test="maxPrice != null">
+                AND unit_price &lt;= #{maxPrice}
+            </if>
+        </where>
+        ORDER BY product_id
+    </select>
+
     <select id="selectById" resultMap="productResultMap">
         SELECT <include refid="allColumns"/>
         FROM product
@@ -62,6 +89,24 @@
             status = #{status},
             production_date = #{productionDate},
             description = #{description}
+        WHERE product_id = #{productId}
+    </update>
+
+    <update id="updateDynamicFields" parameterType="Product">
+        UPDATE product
+        <set>
+            <if test="productCode != null">product_code = #{productCode},</if>
+            <if test="productName != null">product_name = #{productName},</if>
+            <if test="category != null">category = #{category},</if>
+            <if test="brand != null">brand = #{brand},</if>
+            <if test="unit != null">unit = #{unit},</if>
+            <if test="unitPrice != null">unit_price = #{unitPrice},</if>
+            <if test="stockQuantity != null">stock_quantity = #{stockQuantity},</if>
+            <if test="minStock != null">min_stock = #{minStock},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="productionDate != null">production_date = #{productionDate},</if>
+            <if test="description != null">description = #{description},</if>
+        </set>
         WHERE product_id = #{productId}
     </update>
 
