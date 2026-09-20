@@ -14,9 +14,21 @@ public interface ProductMapper {
 
     List<Product> selectByCondition(ProductQuery query);
 
+    /** Uses one filter: name, then category, then status; defaults to on-sale products. */
+    List<Product> selectByPriority(ProductQuery query);
+
     Product selectById(@Param("productId") Long productId);
 
     int insert(Product product);
+
+    default int insertBatch(List<Product> products) {
+        if (products == null || products.isEmpty() || products.contains(null)) {
+            throw new IllegalArgumentException("products must contain at least one non-null product");
+        }
+        return insertBatchRows(products);
+    }
+
+    int insertBatchRows(@Param("products") List<Product> products);
 
     int update(Product product);
 
@@ -39,4 +51,13 @@ public interface ProductMapper {
     int updateDynamicFields(Product product);
 
     int deleteById(@Param("productId") Long productId);
+
+    default int deleteBatch(List<Long> ids) {
+        if (ids == null || ids.isEmpty() || ids.contains(null)) {
+            throw new IllegalArgumentException("ids must contain at least one non-null id");
+        }
+        return deleteBatchRows(ids);
+    }
+
+    int deleteBatchRows(@Param("ids") List<Long> ids);
 }

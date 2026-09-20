@@ -60,6 +60,28 @@
         ORDER BY product_id
     </select>
 
+    <select id="selectByPriority" parameterType="cn.edu.tjut.huaxin.product.query.ProductQuery"
+            resultMap="productResultMap">
+        SELECT <include refid="allColumns"/>
+        FROM product
+        WHERE
+        <choose>
+            <when test="productName != null and productName != ''">
+                product_name LIKE CONCAT('%', #{productName}, '%')
+            </when>
+            <when test="category != null and category != ''">
+                category = #{category}
+            </when>
+            <when test="status != null">
+                status = #{status}
+            </when>
+            <otherwise>
+                status = 1
+            </otherwise>
+        </choose>
+        ORDER BY product_id
+    </select>
+
     <select id="selectById" resultMap="productResultMap">
         SELECT <include refid="allColumns"/>
         FROM product
@@ -74,6 +96,19 @@
         VALUES
             (#{productCode}, #{productName}, #{category}, #{brand}, #{unit}, #{unitPrice},
              #{stockQuantity}, #{minStock}, #{status}, #{productionDate}, #{description})
+    </insert>
+
+    <insert id="insertBatchRows">
+        INSERT INTO product
+            (product_code, product_name, category, brand, unit, unit_price,
+             stock_quantity, min_stock, status, production_date, description)
+        VALUES
+        <foreach collection="products" item="product" separator=",">
+            (#{product.productCode}, #{product.productName}, #{product.category},
+             #{product.brand}, #{product.unit}, #{product.unitPrice},
+             #{product.stockQuantity}, #{product.minStock}, #{product.status},
+             #{product.productionDate}, #{product.description})
+        </foreach>
     </insert>
 
     <update id="update" parameterType="Product">
@@ -113,5 +148,12 @@
     <delete id="deleteById">
         DELETE FROM product
         WHERE product_id = #{productId}
+    </delete>
+    <delete id="deleteBatchRows">
+        DELETE FROM product
+        WHERE product_id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
     </delete>
 </mapper>

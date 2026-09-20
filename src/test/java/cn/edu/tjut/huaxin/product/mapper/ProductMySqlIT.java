@@ -9,7 +9,10 @@ import org.junit.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Manual integration test against the local MySQL database.
@@ -19,6 +22,62 @@ import java.util.List;
  * db.properties file.</p>
  */
 public class ProductMySqlIT {
+
+    @Test
+    public void batchOperationsAgainstMySql() {
+        String codePrefix = "ITB-" + UUID.randomUUID().toString().substring(0, 8) + "-";
+        int initialCount = selectAll().size();
+        List<Product> products = new ArrayList<>();
+        for (int i = 1; i <= 3; i++) {
+            Product product = buildTemporaryProduct();
+            product.setProductCode(codePrefix + i);
+            products.add(product);
+        }
+
+        try {
+            try (SqlSession session = MyBatisUtil.openSession()) {
+                Assert.assertEquals(3, session.getMapper(ProductMapper.class).insertBatch(products));
+                session.commit();
+            }
+
+            List<Long> insertedIds = findIdsByCodePrefix(codePrefix);
+            Assert.assertEquals(3, insertedIds.size());
+            try (SqlSession session = MyBatisUtil.openSession()) {
+                Assert.assertEquals(3, session.getMapper(ProductMapper.class).deleteBatch(insertedIds));
+                session.commit();
+            }
+            Assert.assertTrue(findIdsByCodePrefix(codePrefix).isEmpty());
+            Assert.assertEquals(initialCount, selectAll().size());
+        } finally {
+            List<Long> remainingIds = findIdsByCodePrefix(codePrefix);
+            if (!remainingIds.isEmpty()) {
+                try (SqlSession session = MyBatisUtil.openSession()) {
+                    session.getMapper(ProductMapper.class).deleteBatch(remainingIds);
+                    session.commit();
+                }
+            }
+        }
+    }
+
+    @Test
+    public void priorityQueryAgainstMySql() {
+        Product expected = selectAll().get(0);
+        ProductQuery query = new ProductQuery();
+        query.setProductName(expected.getProductName());
+        query.setCategory("不存在的分类");
+        query.setStatus(2);
+
+        try (SqlSession session = MyBatisUtil.openSession()) {
+            ProductMapper mapper = session.getMapper(ProductMapper.class);
+            List<Product> matches = mapper.selectByPriority(query);
+            Assert.assertTrue(matches.stream().anyMatch(product ->
+                    expected.getProductId().equals(product.getProductId())));
+
+            List<Product> onSale = mapper.selectByPriority(new ProductQuery());
+            Assert.assertFalse(onSale.isEmpty());
+            Assert.assertTrue(onSale.stream().allMatch(product -> product.getStatus() == 1));
+        }
+    }
 
     @Test
     public void conditionalQueryAgainstMySql() {
@@ -110,6 +169,13 @@ public class ProductMySqlIT {
         try (SqlSession session = MyBatisUtil.openSession()) {
             return session.getMapper(ProductMapper.class).selectAll();
         }
+    }
+
+    private List<Long> findIdsByCodePrefix(String prefix) {
+        return selectAll().stream()
+                .filter(product -> product.getProductCode().startsWith(prefix))
+                .map(Product::getProductId)
+                .collect(Collectors.toList());
     }
 
     private Product selectById(Long productId) {
