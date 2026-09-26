@@ -1,5 +1,9 @@
 package cn.edu.tjut.huaxin.product.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -7,7 +11,9 @@ import java.time.LocalDateTime;
 /**
  * Product entity corresponding to the product table.
  */
+@TableName("product")
 public class Product {
+    @TableId(value = "product_id", type = IdType.AUTO)
     private Long productId;
     private String productCode;
     private String productName;

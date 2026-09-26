@@ -28,5 +28,6 @@
 
     <mappers>
         <mapper resource="mapper/ProductMapper.xml"/>
+        <mapper class="cn.edu.tjut.huaxin.product.mapper.ProductPlusMapper"/>
     </mappers>
 </configuration>

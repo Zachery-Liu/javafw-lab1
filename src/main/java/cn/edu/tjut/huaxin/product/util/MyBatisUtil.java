@@ -3,7 +3,6 @@ package cn.edu.tjut.huaxin.product.util;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
-import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,7 +18,7 @@ public final class MyBatisUtil {
 
     private static SqlSessionFactory buildFactory() {
         try (InputStream inputStream = Resources.getResourceAsStream("mybatis-config.xml")) {
-            return new SqlSessionFactoryBuilder().build(inputStream);
+            return MyBatisPlusFactoryBuilder.build(inputStream);
         } catch (IOException exception) {
             throw new ExceptionInInitializerError(exception);
         }

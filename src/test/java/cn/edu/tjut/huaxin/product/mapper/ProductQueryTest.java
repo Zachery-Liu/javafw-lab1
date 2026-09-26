@@ -2,10 +2,10 @@ package cn.edu.tjut.huaxin.product.mapper;
 
 import cn.edu.tjut.huaxin.product.entity.Product;
 import cn.edu.tjut.huaxin.product.query.ProductQuery;
+import cn.edu.tjut.huaxin.product.util.MyBatisPlusFactoryBuilder;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
-import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.h2.tools.RunScript;
 import org.junit.Assert;
 import org.junit.Before;
@@ -24,7 +24,7 @@ public class ProductQueryTest {
     @BeforeClass
     public static void buildSqlSessionFactory() throws Exception {
         try (InputStream input = Resources.getResourceAsStream("mybatis-config-test.xml")) {
-            sqlSessionFactory = new SqlSessionFactoryBuilder().build(input);
+            sqlSessionFactory = MyBatisPlusFactoryBuilder.build(input);
         }
     }
 
