@@ -2,12 +2,16 @@
 <!DOCTYPE mapper PUBLIC
         "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace 对应接口全名；语句 id 对应接口中需要映射 SQL 的方法。 -->
 <mapper namespace="cn.edu.tjut.huaxin.product.mapper.ProductMapper">
 
+    <!-- 显式结果映射：property 是 Java 属性，column 是数据库列；id 标记主键。 -->
     <resultMap id="productResultMap" type="Product">
         <id property="productId" column="product_id"/>
         <result property="productCode" column="product_code"/>
         <result property="productName" column="product_name"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="brandId" column="brand_id"/>
         <result property="category" column="category"/>
         <result property="brand" column="brand"/>
         <result property="unit" column="unit"/>
@@ -15,38 +19,61 @@
         <result property="stockQuantity" column="stock_quantity"/>
         <result property="minStock" column="min_stock"/>
         <result property="status" column="status"/>
+        <result property="deleted" column="deleted"/>
+        <result property="version" column="version"/>
         <result property="productionDate" column="production_date"/>
         <result property="description" column="description"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
 
+    <!-- 公共查询列清单，通过 include 复用；包含独立逻辑删除字段 deleted。 -->
     <sql id="allColumns">
-        product_id, product_code, product_name, category, brand, unit,
-        unit_price, stock_quantity, min_stock, status, production_date,
-        description, created_at, updated_at
+        p.product_id, p.product_code, p.product_name, p.category_id, p.brand_id,
+        c.category_name AS category, b.brand_name AS brand, p.unit,
+        p.unit_price, p.stock_quantity, p.min_stock, p.status, p.production_date,
+        p.description, p.created_at, p.updated_at, p.deleted, p.version
     </sql>
 
+    <!-- 商品多对一关联分类与品牌；LEFT JOIN 保留未填写品牌的商品。 -->
+    <sql id="joinedTables">
+        FROM product p
+        JOIN product_category c ON p.category_id = c.id
+        LEFT JOIN product_brand b ON p.brand_id = b.id
+    </sql>
+
+    <!-- 全部是指全部未删除商品；逻辑删除后原记录仍保存在数据库。 -->
     <select id="selectAll" resultMap="productResultMap">
         SELECT <include refid="allColumns"/>
-        FROM product
+        <include refid="joinedTables"/>
+        WHERE deleted = 0
         ORDER BY product_id
     </select>
 
+    <!-- 多个 if 可同时成立，以 AND 组合；deleted=0 是固定限制。 -->
     <select id="selectByCondition" parameterType="cn.edu.tjut.huaxin.product.query.ProductQuery"
             resultMap="productResultMap">
         SELECT <include refid="allColumns"/>
-        FROM product
+        <include refid="joinedTables"/>
+        <!-- where 负责生成 WHERE 并处理开头多余 AND/OR。 -->
         <where>
+            deleted = 0
             <if test="productName != null and productName != ''">
                 AND product_name LIKE CONCAT('%', #{productName}, '%')
             </if>
+            <if test="categoryId != null">
+                AND p.category_id = #{categoryId}
+            </if>
+            <if test="brandId != null">
+                AND p.brand_id = #{brandId}
+            </if>
             <if test="category != null and category != ''">
-                AND category = #{category}
+                AND c.category_name = #{category}
             </if>
             <if test="brand != null and brand != ''">
-                AND brand = #{brand}
+                AND b.brand_name = #{brand}
             </if>
+            <!-- 状态 0 表示停售，是有效条件，不能用大于 0 代替非 null 判断。 -->
             <if test="status != null">
                 AND status = #{status}
             </if>
@@ -60,17 +87,21 @@
         ORDER BY product_id
     </select>
 
+    <!-- choose 只选择首个有效分支：名称、分类编号、分类名称、状态，最后默认在售。 -->
     <select id="selectByPriority" parameterType="cn.edu.tjut.huaxin.product.query.ProductQuery"
             resultMap="productResultMap">
         SELECT <include refid="allColumns"/>
-        FROM product
-        WHERE
+        <include refid="joinedTables"/>
+        WHERE deleted = 0 AND
         <choose>
             <when test="productName != null and productName != ''">
                 product_name LIKE CONCAT('%', #{productName}, '%')
             </when>
+            <when test="categoryId != null">
+                p.category_id = #{categoryId}
+            </when>
             <when test="category != null and category != ''">
-                category = #{category}
+                c.category_name = #{category}
             </when>
             <when test="status != null">
                 status = #{status}
@@ -82,78 +113,102 @@
         ORDER BY product_id
     </select>
 
+    <!-- #{productId} 使用接口 @Param 指定的参数名，通过占位符绑定值。 -->
     <select id="selectById" resultMap="productResultMap">
         SELECT <include refid="allColumns"/>
-        FROM product
-        WHERE product_id = #{productId}
+        <include refid="joinedTables"/>
+        WHERE product_id = #{productId} AND deleted = 0
     </select>
 
+    <!-- 删除条件写在 ON 中，避免 WHERE 将没有商品的分类过滤掉。 -->
+    <select id="selectCategorySummary" resultType="cn.edu.tjut.huaxin.product.query.CategorySummary">
+        SELECT c.id AS category_id, c.category_name,
+               COUNT(p.product_id) AS product_count,
+               COALESCE(SUM(p.stock_quantity), 0) AS total_stock,
+               COALESCE(SUM(p.unit_price * p.stock_quantity), 0) AS inventory_value
+        FROM product_category c
+        LEFT JOIN product p ON p.category_id = c.id AND p.deleted = 0
+        GROUP BY c.id, c.category_name
+        ORDER BY c.id
+    </select>
+
+    <!-- 自增主键回填至对象 productId；方法返回影响行数，不是生成的编号。 -->
+    <!-- 未写入删除标记和时间列，使用数据库默认值；时间不会自动回填到原对象。 -->
     <insert id="insert" parameterType="Product"
             useGeneratedKeys="true" keyProperty="productId" keyColumn="product_id">
         INSERT INTO product
-            (product_code, product_name, category, brand, unit, unit_price,
+            (product_code, product_name, category_id, brand_id, unit, unit_price,
              stock_quantity, min_stock, status, production_date, description)
         VALUES
-            (#{productCode}, #{productName}, #{category}, #{brand}, #{unit}, #{unitPrice},
+            (#{productCode}, #{productName}, #{categoryId}, #{brandId}, #{unit}, #{unitPrice},
              #{stockQuantity}, #{minStock}, #{status}, #{productionDate}, #{description})
     </insert>
 
+    <!-- foreach 展开多组 VALUES，形成一条多行 INSERT；当前未配置批量主键回填。 -->
     <insert id="insertBatchRows">
         INSERT INTO product
-            (product_code, product_name, category, brand, unit, unit_price,
+            (product_code, product_name, category_id, brand_id, unit, unit_price,
              stock_quantity, min_stock, status, production_date, description)
         VALUES
         <foreach collection="products" item="product" separator=",">
-            (#{product.productCode}, #{product.productName}, #{product.category},
-             #{product.brand}, #{product.unit}, #{product.unitPrice},
+            (#{product.productCode}, #{product.productName}, #{product.categoryId},
+             #{product.brandId}, #{product.unit}, #{product.unitPrice},
              #{product.stockQuantity}, #{product.minStock}, #{product.status},
              #{product.productionDate}, #{product.description})
         </foreach>
     </insert>
 
-    <update id="update" parameterType="Product">
+    <!-- 固定字段更新通常先查询完整对象；遗漏字段可能将 null 写入数据库。 -->
+    <update id="updateRow" parameterType="Product">
         UPDATE product
         SET product_code = #{productCode},
             product_name = #{productName},
-            category = #{category},
-            brand = #{brand},
+            category_id = #{categoryId},
+            brand_id = #{brandId},
             unit = #{unit},
             unit_price = #{unitPrice},
             stock_quantity = #{stockQuantity},
             min_stock = #{minStock},
             status = #{status},
             production_date = #{productionDate},
-            description = #{description}
-        WHERE product_id = #{productId}
+            description = #{description},
+            version = version + 1
+        WHERE product_id = #{productId} AND deleted = 0 AND version = #{version}
     </update>
 
+    <!-- 仅修改非 null 字段；null 表示保留，无法通过此映射表达显式置空。 -->
     <update id="updateDynamicFields" parameterType="Product">
         UPDATE product
+        <!-- set 自动添加 SET 并去掉最后逗号；Java 入口已检查至少存在一个修改字段。 -->
         <set>
             <if test="productCode != null">product_code = #{productCode},</if>
             <if test="productName != null">product_name = #{productName},</if>
-            <if test="category != null">category = #{category},</if>
-            <if test="brand != null">brand = #{brand},</if>
+            <if test="categoryId != null">category_id = #{categoryId},</if>
+            <if test="brandId != null">brand_id = #{brandId},</if>
             <if test="unit != null">unit = #{unit},</if>
             <if test="unitPrice != null">unit_price = #{unitPrice},</if>
             <if test="stockQuantity != null">stock_quantity = #{stockQuantity},</if>
             <if test="minStock != null">min_stock = #{minStock},</if>
+            <!-- 状态 0 表示停售，是有效条件，不能用大于 0 代替非 null 判断。 -->
             <if test="status != null">status = #{status},</if>
             <if test="productionDate != null">production_date = #{productionDate},</if>
             <if test="description != null">description = #{description},</if>
+            version = version + 1,
         </set>
-        WHERE product_id = #{productId}
+        WHERE product_id = #{productId} AND deleted = 0 AND version = #{version}
     </update>
 
-    <delete id="deleteById">
-        DELETE FROM product
-        WHERE product_id = #{productId}
-    </delete>
-    <delete id="deleteBatchRows">
-        DELETE FROM product
-        WHERE product_id IN
+    <!-- 业务上是删除，SQL 实际为 UPDATE；重复删除因 deleted=0 不成立而返回 0。 -->
+    <update id="deleteById">
+        UPDATE product SET deleted = 1
+        WHERE product_id = #{productId} AND deleted = 0
+    </update>
+    <!-- ids 由 @Param 命名，foreach 构造 IN 条件，仅标记选中的未删除商品。 -->
+    <update id="deleteBatchRows">
+        UPDATE product SET deleted = 1
+        WHERE deleted = 0 AND product_id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
-    </delete>
+    </update>
 </mapper>

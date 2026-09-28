@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.edu.tjut.huaxin.product.mapper.ProductPlusMapper">
+    <!-- Wrapper 来自 Java 条件构造器；查询值通过绑定参数传递。 -->
+    <select id="selectJoinedList"
+            resultMap="cn.edu.tjut.huaxin.product.mapper.ProductMapper.productResultMap">
+        SELECT <include refid="cn.edu.tjut.huaxin.product.mapper.ProductMapper.allColumns"/>
+        <include refid="cn.edu.tjut.huaxin.product.mapper.ProductMapper.joinedTables"/>
+        ${ew.customSqlSegment}
+    </select>
+    <select id="selectJoinedPage"
+            resultMap="cn.edu.tjut.huaxin.product.mapper.ProductMapper.productResultMap">
+        SELECT <include refid="cn.edu.tjut.huaxin.product.mapper.ProductMapper.allColumns"/>
+        <include refid="cn.edu.tjut.huaxin.product.mapper.ProductMapper.joinedTables"/>
+        ${ew.customSqlSegment}
+    </select>
+</mapper>

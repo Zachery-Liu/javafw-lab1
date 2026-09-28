@@ -2,21 +2,29 @@
 <!DOCTYPE configuration PUBLIC
         "-//mybatis.org//DTD Config 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-config.dtd">
+<!-- 生产数据库配置，由 MyBatisUtil 读取；这里配置数据访问，不启动 HTTP 服务。 -->
 <configuration>
+    <!-- 本地连接参数独立保存；不要将真实账号口令提交到 Git。 -->
     <properties resource="db.properties"/>
 
+    <!-- 驼峰映射对应 product_name 与 productName；日志实现选用 Log4j。 -->
     <settings>
         <setting name="mapUnderscoreToCamelCase" value="true"/>
         <setting name="logImpl" value="LOG4J"/>
+        <setting name="lazyLoadingEnabled" value="true"/>
+        <setting name="aggressiveLazyLoading" value="false"/>
     </settings>
 
+    <!-- 扫描实体包注册别名，XML 可使用 Product 短名。 -->
     <typeAliases>
         <package name="cn.edu.tjut.huaxin.product.entity"/>
     </typeAliases>
 
+    <!-- JDBC 管理事务；手动提交模式下写操作需 commit。 -->
     <environments default="development">
         <environment id="development">
             <transactionManager type="JDBC"/>
+            <!-- POOLED 使用 MyBatis 连接池，复用数据库连接。 -->
             <dataSource type="POOLED">
                 <property name="driver" value="${db.driver}"/>
                 <property name="url" value="${db.url}"/>
@@ -26,8 +34,11 @@
         </environment>
     </environments>
 
+    <!-- 注册原生 XML 与 MP 接口；两者通过同一工厂工具获得分页配置。 -->
     <mappers>
         <mapper resource="mapper/ProductMapper.xml"/>
-        <mapper class="cn.edu.tjut.huaxin.product.mapper.ProductPlusMapper"/>
+        <mapper resource="mapper/ProductPlusMapper.xml"/>
+        <mapper class="cn.edu.tjut.huaxin.product.mapper.CategoryMapper"/>
+        <mapper class="cn.edu.tjut.huaxin.product.mapper.BrandMapper"/>
     </mappers>
 </configuration>
