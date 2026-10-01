@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.edu.tjut.huaxin.product.mapper.ProductAdvancedMapper">
+    <!-- property 是开发者固定的别名，查询值始终用 #{} 绑定。 -->
+    <sql id="active">${alias}.deleted = 0</sql>
+    <select id="selectWithTrim" resultMap="cn.edu.tjut.huaxin.product.mapper.ProductMapper.productResultMap">
+        SELECT <include refid="cn.edu.tjut.huaxin.product.mapper.ProductMapper.allColumns"/>
+        <include refid="cn.edu.tjut.huaxin.product.mapper.ProductMapper.joinedTables"/>
+        <trim prefix="WHERE" prefixOverrides="AND |OR ">
+            AND <include refid="active"><property name="alias" value="p"/></include>
+            <if test="productName != null and productName != ''">AND p.product_name LIKE CONCAT('%', #{productName}, '%')</if>
+            <if test="categoryId != null">AND p.category_id = #{categoryId}</if>
+            <if test="status != null">AND p.status = #{status}</if>
+        </trim>
+        ORDER BY p.product_id
+    </select>
+    <select id="selectByIds" resultType="Product">
+        SELECT * FROM product WHERE deleted = 0 AND
+        <choose><when test="ids != null and ids.size > 0">
+            product_id IN <foreach collection="ids" item="id" open="(" close=")" separator=",">#{id}</foreach>
+        </when><otherwise>1 = 0</otherwise></choose>
+        ORDER BY product_id
+    </select>
+    <select id="selectByCategoryGroups" resultType="Product">
+        SELECT * FROM product WHERE deleted = 0 AND
+        <choose><when test="groups != null and groups.size > 0">
+            <foreach collection="groups" index="categoryId" item="ids" open="(" close=")" separator=" OR ">
+                (category_id = #{categoryId} AND
+                <choose><when test="ids != null and ids.size > 0">
+                    product_id IN <foreach collection="ids" item="id" open="(" close=")" separator=",">#{id}</foreach>
+                </when><otherwise>1 = 0</otherwise></choose>)
+            </foreach>
+        </when><otherwise>1 = 0</otherwise></choose>
+        ORDER BY product_id
+    </select>
+    <!-- 即使有人绕过外层 Java，缺版本也不能匹配。 -->
+    <update id="updateWithTrim">
+        UPDATE product
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="productName != null">product_name = #{productName},</if>
+            <if test="description != null">description = #{description},</if>
+            version = version + 1,
+        </trim>
+        WHERE product_id = #{productId} AND version = #{version} AND deleted = 0
+    </update>
+    <update id="updatePricesRows">
+        UPDATE product SET unit_price = CASE product_id
+        <foreach collection="products" item="p">WHEN #{p.productId} THEN #{p.unitPrice}</foreach>
+        ELSE unit_price END, version = version + 1
+        WHERE deleted = 0 AND
+        <foreach collection="products" item="p" open="(" close=")" separator=" OR ">
+            (product_id = #{p.productId} AND version = #{p.version})
+        </foreach>
+    </update>
+</mapper>
