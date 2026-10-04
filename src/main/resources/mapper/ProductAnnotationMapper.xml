@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.edu.tjut.huaxin.product.mapper.ProductAnnotationMapper">
+    <select id="selectJoinedById" resultMap="cn.edu.tjut.huaxin.product.mapper.ProductMapper.productResultMap">
+        SELECT <include refid="cn.edu.tjut.huaxin.product.mapper.ProductMapper.allColumns"/>
+        <include refid="cn.edu.tjut.huaxin.product.mapper.ProductMapper.joinedTables"/>
+        WHERE p.product_id = #{productId} AND p.deleted = 0
+    </select>
+</mapper>
