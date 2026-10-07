@@ -42,5 +42,7 @@
         <mapper class="cn.edu.tjut.huaxin.product.mapper.BrandMapper"/>
         <mapper resource="mapper/ProductAdvancedMapper.xml"/>
         <mapper resource="mapper/ProductAnnotationMapper.xml"/>
+        <mapper resource="mapper/ProductRelationMapper.xml"/>
+        <mapper class="cn.edu.tjut.huaxin.product.mapper.ProductRelationAnnotationMapper"/>
     </mappers>
 </configuration>

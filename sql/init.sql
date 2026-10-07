@@ -117,3 +117,22 @@ VALUES
      (SELECT id FROM product_category WHERE category_name = '数码配件'),
      (SELECT id FROM product_brand WHERE brand_name = 'VisionGo'), '个',
      199.00, 12, 6, 0, '2024-09-16', '旧型号，已停止销售');
+
+-- 课件关联映射扩展表
+CREATE TABLE IF NOT EXISTS product_detail (
+    product_id BIGINT PRIMARY KEY,
+    origin VARCHAR(100) NOT NULL,
+    warranty_months INT NOT NULL DEFAULT 0,
+    CONSTRAINT fk_detail_product FOREIGN KEY(product_id) REFERENCES product(product_id)
+);
+CREATE TABLE IF NOT EXISTS product_tag (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tag_name VARCHAR(50) NOT NULL UNIQUE
+);
+CREATE TABLE IF NOT EXISTS product_tag_link (
+    product_id BIGINT NOT NULL,
+    tag_id BIGINT NOT NULL,
+    PRIMARY KEY(product_id, tag_id),
+    CONSTRAINT fk_link_product FOREIGN KEY(product_id) REFERENCES product(product_id),
+    CONSTRAINT fk_link_tag FOREIGN KEY(tag_id) REFERENCES product_tag(id)
+);

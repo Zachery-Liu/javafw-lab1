@@ -1,3 +1,6 @@
+DROP TABLE IF EXISTS product_tag_link;
+DROP TABLE IF EXISTS product_detail;
+DROP TABLE IF EXISTS product_tag;
 -- 仅用于 H2 测试：每个测试前重建表，禁止当作正式库的升级脚本执行。
 DROP TABLE IF EXISTS product;
 DROP TABLE IF EXISTS product_category;
@@ -45,3 +48,25 @@ VALUES
     ('TEST-001', '测试键盘', 1, 1, '个', 199.00, 20, 5, 1, '2026-01-10', 'CRUD测试数据'),
     ('TEST-002', '测试笔记本', 2, 1, '本', 15.50, 30, 10, 1, '2026-02-20', '查询测试数据'),
     ('TEST-003', '测试台灯', 3, 1, '台', 89.00, 0, 8, 2, '2026-03-15', '缺货测试数据');
+
+CREATE TABLE IF NOT EXISTS product_detail (
+    product_id BIGINT PRIMARY KEY,
+    origin VARCHAR(100) NOT NULL,
+    warranty_months INT NOT NULL DEFAULT 0,
+    CONSTRAINT fk_detail_product FOREIGN KEY(product_id) REFERENCES product(product_id)
+);
+CREATE TABLE IF NOT EXISTS product_tag (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tag_name VARCHAR(50) NOT NULL UNIQUE
+);
+CREATE TABLE IF NOT EXISTS product_tag_link (
+    product_id BIGINT NOT NULL,
+    tag_id BIGINT NOT NULL,
+    PRIMARY KEY(product_id, tag_id),
+    CONSTRAINT fk_link_product FOREIGN KEY(product_id) REFERENCES product(product_id),
+    CONSTRAINT fk_link_tag FOREIGN KEY(tag_id) REFERENCES product_tag(id)
+);
+
+INSERT INTO product_detail VALUES (1,'天津',24);
+INSERT INTO product_tag(id,tag_name) VALUES (1,'热销'),(2,'办公'),(3,'空标签');
+INSERT INTO product_tag_link VALUES (1,1),(1,2),(2,2);

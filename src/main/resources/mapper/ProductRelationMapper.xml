@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.edu.tjut.huaxin.product.mapper.ProductRelationMapper">
+    <resultMap id="graph" type="ProductGraph" extends="cn.edu.tjut.huaxin.product.mapper.ProductMapper.productResultMap">
+        <!-- 单个关联对象用 association；每层 id 决定如何归并，空关联由 notNullColumn 排除。 -->
+        <association property="categoryObject" javaType="Category" notNullColumn="c_id">
+            <id property="id" column="c_id"/><result property="categoryName" column="category"/>
+        </association>
+        <association property="brandObject" javaType="Brand" notNullColumn="b_id">
+            <id property="id" column="b_id"/><result property="brandName" column="brand"/>
+        </association>
+        <association property="detail" javaType="ProductDetail" notNullColumn="detail_id">
+            <id property="productId" column="detail_id"/><result property="origin" column="origin"/>
+            <result property="warrantyMonths" column="warranty_months"/>
+        </association>
+        <collection property="tags" ofType="Tag" notNullColumn="tag_id">
+            <id property="id" column="tag_id"/><result property="tagName" column="tag_name"/>
+        </collection>
+    </resultMap>
+    <select id="selectGraph" resultMap="graph">
+        SELECT <include refid="cn.edu.tjut.huaxin.product.mapper.ProductMapper.allColumns"/>,
+               c.id c_id, b.id b_id, d.product_id detail_id, d.origin, d.warranty_months,
+               t.id tag_id, t.tag_name
+        <include refid="cn.edu.tjut.huaxin.product.mapper.ProductMapper.joinedTables"/>
+        LEFT JOIN product_detail d ON p.product_id=d.product_id
+        LEFT JOIN product_tag_link l ON p.product_id=l.product_id
+        LEFT JOIN product_tag t ON l.tag_id=t.id
+        WHERE p.product_id=#{id} AND p.deleted=0 ORDER BY t.id
+    </select>
+    <resultMap id="lazyGraph" type="ProductGraph">
+        <id property="productId" column="product_id"/>
+        <association property="categoryObject" column="category_id" select="findCategory" fetchType="lazy"/>
+        <association property="brandObject" column="brand_id" select="findBrand" fetchType="lazy"/>
+        <association property="detail" column="product_id" select="findDetail" fetchType="lazy"/>
+        <collection property="tags" column="product_id" select="findTags" fetchType="lazy"/>
+    </resultMap>
+    <select id="selectLazyGraph" resultMap="lazyGraph">SELECT * FROM product WHERE product_id=#{id} AND deleted=0</select>
+    <resultMap id="categoryGraph" type="CategoryGraph">
+        <id property="id" column="c_id"/><result property="categoryName" column="category_name"/>
+        <collection property="products" ofType="Product" notNullColumn="product_id">
+            <id property="productId" column="product_id"/>
+            <result property="productName" column="product_name"/>
+            <result property="categoryId" column="category_id"/>
+        </collection>
+    </resultMap>
+    <select id="selectCategory" resultMap="categoryGraph">
+        SELECT c.id c_id,c.category_name,p.product_id,p.product_name,p.category_id
+        FROM product_category c LEFT JOIN product p ON c.id=p.category_id AND p.deleted=0
+        WHERE c.id=#{id} ORDER BY p.product_id
+    </select>
+    <resultMap id="tagGraph" type="TagGraph">
+        <id property="id" column="t_id"/><result property="tagName" column="tag_name"/>
+        <collection property="products" ofType="Product" notNullColumn="product_id">
+            <id property="productId" column="product_id"/><result property="productName" column="product_name"/>
+        </collection>
+    </resultMap>
+    <select id="selectTag" resultMap="tagGraph">
+        SELECT t.id t_id,t.tag_name,p.product_id,p.product_name FROM product_tag t
+        LEFT JOIN product_tag_link l ON t.id=l.tag_id
+        LEFT JOIN product p ON l.product_id=p.product_id AND p.deleted=0
+        WHERE t.id=#{id} ORDER BY p.product_id
+    </select>
+    <select id="findCategory" resultType="Category">SELECT * FROM product_category WHERE id=#{id}</select>
+    <select id="findBrand" resultType="Brand">SELECT * FROM product_brand WHERE id=#{id}</select>
+    <select id="findDetail" resultType="ProductDetail">SELECT * FROM product_detail WHERE product_id=#{id}</select>
+    <select id="findTags" resultType="Tag">SELECT t.* FROM product_tag t JOIN product_tag_link l ON t.id=l.tag_id WHERE l.product_id=#{id} ORDER BY t.id</select>
+    <select id="findCategoryProducts" resultType="Product">SELECT * FROM product WHERE category_id=#{id} AND deleted=0 ORDER BY product_id</select>
+    <select id="findTagProducts" resultType="Product">SELECT p.* FROM product p JOIN product_tag_link l ON p.product_id=l.product_id WHERE l.tag_id=#{id} AND p.deleted=0 ORDER BY p.product_id</select>
+</mapper>
