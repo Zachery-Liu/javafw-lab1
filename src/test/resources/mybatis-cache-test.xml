@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC
+        "-//mybatis.org//DTD Config 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-config.dtd">
+<!-- H2 内存测试配置，不读取真实 MySQL 账号，也不修改正式商品数据。 -->
+<configuration>
+    <!-- 驼峰映射对应 product_name 与 productName；日志实现选用 Log4j。 -->
+    <settings>
+        <setting name="mapUnderscoreToCamelCase" value="true"/>
+        <setting name="logImpl" value="LOG4J"/>
+        <setting name="lazyLoadingEnabled" value="true"/>
+        <setting name="aggressiveLazyLoading" value="false"/>
+    </settings>
+    <!-- 扫描实体包注册别名，XML 可使用 Product 短名。 -->
+    <typeAliases>
+        <package name="cn.edu.tjut.huaxin.product.entity"/>
+    </typeAliases>
+    <!-- JDBC 管理事务；手动提交模式下写操作需 commit。 -->
+    <environments default="test">
+        <environment id="test">
+            <transactionManager type="JDBC"/>
+            <!-- 测试使用非池化连接；内存库由每个测试前的 schema-h2.sql 重置。 -->
+            <dataSource type="UNPOOLED">
+                <property name="driver" value="org.h2.Driver"/>
+                <!-- MySQL 兼容模式支持本项目语法；最后连接关闭后仍保持库，直到 JVM 结束。 -->
+                <property name="url" value="jdbc:h2:mem:product_test;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"/>
+                <property name="username" value="sa"/>
+                <property name="password" value=""/>
+            </dataSource>
+        </environment>
+    </environments>
+    <!-- 注册原生 XML 与 MP 接口；两者通过同一工厂工具获得分页配置。 -->
+    <mappers>
+        <mapper resource="mapper/ProductMapper.xml"/>
+        <mapper resource="mapper/ProductPlusMapper.xml"/>
+        <mapper class="cn.edu.tjut.huaxin.product.mapper.CategoryMapper"/>
+        <mapper class="cn.edu.tjut.huaxin.product.mapper.BrandMapper"/>
+        <mapper resource="mapper/ProductAdvancedMapper.xml"/>
+        <mapper resource="mapper/ProductAnnotationMapper.xml"/>
+        <mapper resource="mapper/ProductRelationMapper.xml"/>
+        <mapper class="cn.edu.tjut.huaxin.product.mapper.ProductRelationAnnotationMapper"/>
+        <mapper class="cn.edu.tjut.huaxin.product.cache.TeachingCacheMapper"/>
+        <mapper class="cn.edu.tjut.huaxin.product.cache.IndependentCacheMapper"/>
+    </mappers>
+</configuration>
