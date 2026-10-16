@@ -1,4 +1,7 @@
+# 数据库驱动类；此文件为模板，复制成 db.properties 后填写本机连接。
 db.driver=com.mysql.cj.jdbc.Driver
+# 新环境示例库为 product_management；本机现有库为 javafw，应以实际配置为准。
 db.url=jdbc:mysql://localhost:3306/product_management?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8
+# 账号与密码仅保存在本地文件；CHANGE_ME 需要替换，不是有效密码。
 db.username=root
 db.password=CHANGE_ME

@@ -1,29 +1,29 @@
-# Maven build output
+# Maven 编译结果和测试报告
 target/
 
-# IntelliJ IDEA
+# IntelliJ IDEA 本机设置
 .idea/
 *.iml
 out/
 
-# Eclipse
+# Eclipse 本机设置
 .classpath
 .project
 .settings/
 
-# Visual Studio Code
+# Visual Studio Code 本机设置
 .vscode/
 
-# Operating system files
+# 操作系统生成的辅助文件
 .DS_Store
 Thumbs.db
 
-# Local configuration and logs
+# 本地配置与日志
 *.log
 *.local
 .env
 
-# Local database credentials
+# 本地数据库账号口令，保留文件供运行使用但不提交到 Git
 src/main/resources/db.properties
 
 # Local documents and reports (keep on disk; never commit)

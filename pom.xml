@@ -12,6 +12,7 @@
     <name>product-management-lab</name>
     <description>MyBatis product management CRUD experiment.</description>
 
+    <!-- Java 8 编译目标不等于实际运行 JDK；统一管理依赖版本和 UTF-8 编码。 -->
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
@@ -19,51 +20,107 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <mybatis-plus.version>3.5.17</mybatis-plus.version>
         <slf4j.version>1.7.36</slf4j.version>
+        <!-- JDK 26 以下不传入新版参数，由下方 profile 按运行 JDK 启用。 -->
+        <test.finalFieldMutationArgs></test.finalFieldMutationArgs>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>com.baomidou</groupId>
+            <!-- MP 核心与通用 Mapper，依赖链提供 MyBatis 核心。 -->
             <artifactId>mybatis-plus-core</artifactId>
             <version>${mybatis-plus.version}</version>
         </dependency>
         <dependency>
             <groupId>com.baomidou</groupId>
+            <!-- 分页及 SQL 解析相关模块，与 MP 核心使用相同版本。 -->
             <artifactId>mybatis-plus-jsqlparser-4.9</artifactId>
             <version>${mybatis-plus.version}</version>
         </dependency>
         <dependency>
             <groupId>com.mysql</groupId>
+            <!-- 运行时 MySQL JDBC 驱动，用于真实数据库联调。 -->
             <artifactId>mysql-connector-j</artifactId>
             <version>8.0.33</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>
+            <!-- 当前 MyBatis 指定的 SQL 日志实现。 -->
             <artifactId>log4j</artifactId>
             <version>1.2.17</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
+            <!-- 部分依赖使用的日志接口。 -->
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
+            <!-- SLF4J 无输出实现，不关闭显式配置的 MyBatis Log4j 日志。 -->
             <artifactId>slf4j-nop</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
+            <!-- 测试阶段运行 @Test 并执行 Assert。 -->
             <artifactId>junit</artifactId>
             <version>4.13.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.h2database</groupId>
+            <!-- 测试阶段的内存数据库，不代替真实 MySQL 验证。 -->
             <artifactId>h2</artifactId>
             <version>2.2.224</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.5.0</version>
+                <configuration>
+                    <!-- 本机连接配置仍供 IDE/测试使用，但不随交付 JAR 打包。 -->
+                    <excludes>
+                        <exclude>db.properties</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.4</version>
+                <configuration>
+                    <includes>
+                        <!-- 只保留三个基础测试类，直接运行，不再嵌套套件。 -->
+                        <include>**/ProductMapperTest.java</include>
+                        <include>**/ProductPlusMapperTest.java</include>
+                        <include>**/ProductFeatureTest.java</include>
+                    </includes>
+                    <!-- 单进程顺序运行；H2 每项重建同一个内存库，不开启并行。 -->
+                    <forkCount>1</forkCount>
+                    <reuseForks>true</reuseForks>
+                    <!-- 测试 JVM 使用 UTF-8，保证 Windows 下中文输出编码一致。 -->
+                    <argLine>-Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 ${test.finalFieldMutationArgs}</argLine>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>jdk26-final-field-mutation</id>
+            <activation>
+                <jdk>[26,)</jdk>
+            </activation>
+            <properties>
+                <!-- MyBatis/MP 在 classpath 中，通过反射改写 BoundSql.sql。 -->
+                <test.finalFieldMutationArgs>--enable-final-field-mutation=ALL-UNNAMED</test.finalFieldMutationArgs>
+            </properties>
+        </profile>
+    </profiles>
 </project>
