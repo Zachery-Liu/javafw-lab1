@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 public abstract class AbstractH2MapperTest {
     // SqlSessionFactory 创建会话；每个具体测试类开始前重新构建，不共享 SqlSession。
     protected static SqlSessionFactory sqlSessionFactory;
+    protected static QueryCounter queryCounter;
 
     // 非测试规则：打印每项开始、通过或失败；只有全部断言完成才提示通过。
     @Rule
@@ -35,13 +36,22 @@ public abstract class AbstractH2MapperTest {
      */
     @BeforeClass
     public static void buildSqlSessionFactory() throws Exception {
-        try (InputStream input = Resources.getResourceAsStream("mybatis-config-test.xml")) {
-            sqlSessionFactory = MyBatisPlusFactoryBuilder.build(input);
+        queryCounter = new QueryCounter();
+        sqlSessionFactory = createFactory("mybatis-config-test.xml", queryCounter);
+    }
+
+    /** 非测试辅助方法：缓存测试单独读取缓存配置，工厂仍只连接 H2。 */
+    protected static SqlSessionFactory createFactory(String resource, QueryCounter counter) throws Exception {
+        try (InputStream input = Resources.getResourceAsStream(resource)) {
+            SqlSessionFactory factory = MyBatisPlusFactoryBuilder.build(input);
+            factory.getConfiguration().addInterceptor(counter);
+            return factory;
         }
     }
 
     /**
      * 非测试方法：JUnit 在每一个 @Test 之前自动调用（@Before）。
+     * 综合测试也会在独立场景之间调用，避免合并后共享前一场景的修改或缓存计数。
      * 重建商品及关联表，恢复基准商品、分类、品牌及关联样例，版本为 0。
      * 提交准备数据后再运行测试；这样删除、修改、回滚都不会影响下一项测试。
      * SQL 出错立即抛出异常，避免把准备失败误当成业务测试失败。
@@ -57,10 +67,11 @@ public abstract class AbstractH2MapperTest {
             runner.runScript(reader);
             session.commit();
         }
+        queryCounter.reset();
     }
 
     /**
-     * 非测试辅助方法：供两个新增测试构造商品对象，本方法不访问数据库。
+     * 非测试辅助方法：供新增、批量写入和边界验证构造商品对象，本方法不访问数据库。
      * 分类 1、品牌 1 来自准备脚本；真正写库和提交由调用它的 @Test 完成。
      */
     protected Product newProduct(String code) {

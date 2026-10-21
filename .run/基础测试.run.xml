@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="基础测试（12项）" type="JUnit" factoryName="JUnit">
+  <configuration default="false" name="商品功能测试" type="JUnit" factoryName="JUnit">
     <module name="lab01" />
     <option name="PACKAGE_NAME" value="cn.edu.tjut.huaxin.product.mapper" />
     <option name="TEST_OBJECT" value="package" />

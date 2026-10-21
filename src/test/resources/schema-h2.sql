@@ -36,6 +36,10 @@ CREATE TABLE product (
     description VARCHAR(255),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_product_price CHECK (unit_price >= 0),
+    CONSTRAINT chk_product_stock CHECK (stock_quantity >= 0),
+    CONSTRAINT chk_product_min_stock CHECK (min_stock >= 0),
+    CONSTRAINT chk_product_status CHECK (status IN (0, 1, 2)),
     CONSTRAINT fk_product_category FOREIGN KEY (category_id) REFERENCES product_category(id),
     CONSTRAINT fk_product_brand FOREIGN KEY (brand_id) REFERENCES product_brand(id)
 );

@@ -96,7 +96,7 @@
                 <version>3.5.4</version>
                 <configuration>
                     <includes>
-                        <!-- 只保留三个基础测试类，直接运行，不再嵌套套件。 -->
+                        <!-- 三个功能测试类直接运行，包含基础与进阶验证，不嵌套套件。 -->
                         <include>**/ProductMapperTest.java</include>
                         <include>**/ProductPlusMapperTest.java</include>
                         <include>**/ProductFeatureTest.java</include>
